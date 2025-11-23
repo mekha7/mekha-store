@@ -1,18 +1,41 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-} from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import "./App.css";
-import productsData from "./products.json"; // uses your 268 products
+import productsData from "./products.json";
+import LanguagePicker, { translations } from "./components/LanguagePicker";
+// --- SWIPER IMPORTS ---
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination,Zoom } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import "swiper/css/zoom";
 
 function App() {
-  // Products (loaded from products.json)
-  const [products, setProducts] = useState([]);
+
+  const goHome = () => {
+  setShowAllProducts(false);    // Top 10 only
+  setCategory("All");           // Reset category
+  setSearch("");                // Clear search
+  setView("shop");            // Switch to home page
+  window.scrollTo(0, 0);        // Jump to top
+};
 
   // Shop filters
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+
+  // Review stars
+const [reviewRating, setReviewRating] = useState(0);
+
+// Review text
+const [reviewText, setReviewText] = useState("");
+
+// Uploaded images
+const [reviewImages, setReviewImages] = useState([]);
+
+const [showAllProducts, setShowAllProducts] = useState(false);
+
+
 
   // Cart & checkout
   const [cart, setCart] = useState([]);
@@ -31,18 +54,14 @@ function App() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [invoiceData, setInvoiceData] = useState(null);
 
-  // Feedback
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [feedbackList, setFeedbackList] = useState([]);
-
-  // Chatbox
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
 
   // Wishlist & Compare
   const [wishlist, setWishlist] = useState([]);
+  // Product Modal state
+const [selectedProduct, setSelectedProduct] = useState(null);
+const [productModalOpen, setProductModalOpen] = useState(false);
+
+
   const [compareList, setCompareList] = useState([]);
 
   // Sales + price history
@@ -54,8 +73,41 @@ function App() {
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminError, setAdminError] = useState("");
+  
 
   // Admin product form (Add Product ONLY)
+    const [products, setProducts] = useState([]);
+  const [featuredIds, setFeaturedIds] = useState([]);
+
+ const [top10Ids, setTop10Ids] = useState(() => {
+ const saved = localStorage.getItem("top10");
+  return saved ? JSON.parse(saved) : [];
+ });
+
+ const handleReviewImageUpload = (e) => {
+  const files = Array.from(e.target.files);
+  const previews = files.map((file) => URL.createObjectURL(file));
+  setReviewImages((prev) => [...prev, ...previews]);
+};
+
+
+ useEffect(() => {
+  localStorage.setItem("featuredIds", JSON.stringify(featuredIds));
+}, [featuredIds]);
+
+ useEffect(() => {
+  localStorage.setItem("top10", JSON.stringify(top10Ids));
+ }, [top10Ids]);
+
+
+
+  // HERO PRODUCTS — admin selected
+  const heroProducts = useMemo(() => {
+    const selected = products.filter(p => featuredIds.includes(p.id));
+    return selected.slice(0, 5);
+  }, [products, featuredIds]);
+
+
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
@@ -72,6 +124,15 @@ function App() {
 
   // About modal
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+
+  // Language
+  const [language, setLanguage] = useState("English");
+
+  // Simple translation helper with fallback
+  function t(key, fallback) {
+    const langPack = translations?.[language] || {};
+    return langPack[key] || fallback;
+  }
 
   // Watch hash + back/forward for admin/about
   useEffect(() => {
@@ -146,6 +207,8 @@ function App() {
   const { categoryOptions, categoryCounts, lowStockItems } = useMemo(() => {
     const counts = {};
     const lows = [];
+    // Top slider products (take first 5)
+
 
     products.forEach((p) => {
       const key = p.category || "Misc";
@@ -164,17 +227,23 @@ function App() {
     };
   }, [products]);
 
-  // Filter products for shop view
-  const filteredProducts = useMemo(() => {
-    const searchLower = search.toLowerCase();
+// Filter products for shop view
+const filteredProducts = useMemo(() => {
+  const searchLower = search.toLowerCase();
 
-    return products.filter((p) => {
-      const matchSearch = p.name.toLowerCase().includes(searchLower);
-      const cat = p.category || "Misc";
-      const matchCategory = category === "All" ? true : cat === category;
-      return matchSearch && matchCategory;
-    });
-  }, [products, search, category]);
+  return products.filter((p) => {
+    const matchSearch = p.name.toLowerCase().includes(searchLower);
+    const cat = p.category || "Misc";
+    const matchCategory = category === "All" ? true : cat === category;
+    return matchSearch && matchCategory;
+  });
+}, [products, search, category]);
+
+ // ⭐ Homepage — show only first 10 products
+ const homepageProducts = showAllProducts
+  ? filteredProducts
+  : filteredProducts.slice(0, 10);
+
 
   const cartTotal = cart.reduce(
     (sum, c) => sum + (c.product.price || 0) * c.qty,
@@ -250,101 +319,19 @@ function App() {
         : [...prev, productId]
     );
   }
-
-  function toggleCompare(productId) {
-    setCompareList((prev) => {
-      if (prev.includes(productId)) {
-        return prev.filter((id) => id !== productId);
-      }
-      if (prev.length >= 4) {
-        alert("You can compare up to 4 products at a time.");
-        return prev;
-      }
-      return [...prev, productId];
-    });
-  }
-
-  function downloadBrochure(product) {
-    const content = `
-Mekha Solutions & Services
-
-Product: ${product.name}
-Category: ${product.category}
-Price: ${
-      product.price ?? product.mrp ?? "Contact for price"
-    }
-
-Description:
-${product.description || "—"}
-
-For enquiries:
-Phone: 8050426215
-Email: mekhasolutions@gmail.com
-`;
-    const blob = new Blob([content], {
-      type: "text/plain;charset=utf-8",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute(
-      "download",
-      `${product.name.replace(/[^a-z0-9]/gi, "_")}_brochure.txt`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // FEEDBACK
-  function submitFeedback() {
-    if (!rating || !comment.trim()) {
-      alert("Please select rating and write a comment.");
-      return;
-    }
-    setFeedbackList([...feedbackList, { rating, comment }]);
-    setRating(0);
-    setComment("");
-  }
-
-  // CHAT
-  function toggleChat() {
-    setChatOpen((prev) => {
-      const next = !prev;
-      if (next && chatHistory.length === 0) {
-        setChatHistory([
-          {
-            sender: "bot",
-            text:
-              "Hi, welcome to Mekha Solutions & Services chatbox. If you have any question, drop here.",
-          },
-        ]);
-      }
-      return next;
-    });
-  }
-
-  function sendChat() {
-    if (!chatMessage.trim()) return;
-
-    const userMsg = { sender: "user", text: chatMessage };
-    const botMsg = {
-      sender: "bot",
-      text:
-        "Thank you! Please drop your contact number and details — we will reach you back soon.",
-    };
-
-    setChatHistory((prev) => [...prev, userMsg, botMsg]);
-    setChatMessage("");
-  }
-
   // CHECKOUT / INVOICE
   function handleGenerateInvoice() {
     if (!customerName || !customerPhone || !customerAddress) {
-      alert("Please fill customer details.");
+      alert(
+        t(
+          "customerDetailsValidation",
+          "Please fill customer details."
+        )
+      );
       return;
     }
     if (cart.length === 0) {
-      alert("Cart is empty.");
+      alert(t("cartEmptyMsg", "Cart is empty."));
       return;
     }
 
@@ -406,7 +393,9 @@ Email: mekhasolutions@gmail.com
       setAdminError("");
       setAdminPass("");
     } else {
-      setAdminError("Invalid username or password");
+      setAdminError(
+        t("adminInvalidCreds", "Invalid username or password")
+      );
     }
   }
 
@@ -444,7 +433,12 @@ Email: mekhasolutions@gmail.com
     e.preventDefault();
 
     if (!newProduct.name || !newProduct.category) {
-      alert("Name and category are required.");
+      alert(
+        t(
+          "addProductValidation",
+          "Name and category are required."
+        )
+      );
       return;
     }
 
@@ -585,12 +579,12 @@ Email: mekhasolutions@gmail.com
   // EXPORTS
   function exportCSV() {
     const header = [
-      "Name",
-      "Category",
+      t("nameHeader", "Name"),
+      t("categoryHeader", "Category"),
       "MRP",
-      "Price",
-      "Stock",
-      "Description",
+      t("priceHeader", "Price"),
+      t("stockHeader", "Stock"),
+      t("descriptionHeader", "Description"),
     ];
     const rows = products.map((p) => [
       p.name,
@@ -627,12 +621,12 @@ Email: mekhasolutions@gmail.com
   function exportExcelLike() {
     // Simple Excel-friendly CSV with .xls extension
     const header = [
-      "Name",
-      "Category",
+      t("nameHeader", "Name"),
+      t("categoryHeader", "Category"),
       "MRP",
-      "Price",
-      "Stock",
-      "Description",
+      t("priceHeader", "Price"),
+      t("stockHeader", "Stock"),
+      t("descriptionHeader", "Description"),
     ];
     const rows = products.map((p) => [
       p.name,
@@ -674,11 +668,18 @@ Email: mekhasolutions@gmail.com
         </style>
       </head>
       <body>
-        <h2>Mekha Solutions & Services - Product List</h2>
+        <h2>Mekha CCTV Solutions &amp; Services - ${t(
+          "productListTitle",
+          "Product List"
+        )}</h2>
         <table>
           <thead>
             <tr>
-              <th>Name</th><th>Category</th><th>MRP</th><th>Price</th><th>Stock</th>
+              <th>${t("nameHeader", "Name")}</th>
+              <th>${t("categoryHeader", "Category")}</th>
+              <th>MRP</th>
+              <th>${t("priceHeader", "Price")}</th>
+              <th>${t("stockHeader", "Stock")}</th>
             </tr>
           </thead>
           <tbody>
@@ -714,7 +715,10 @@ Email: mekhasolutions@gmail.com
     const nameLower = file.name.toLowerCase();
     if (!nameLower.endsWith(".csv")) {
       alert(
-        "Currently bulk upload supports CSV. Please export your Excel file as CSV and upload."
+        t(
+          "bulkUploadCsvMsg",
+          "Currently bulk upload supports CSV. Please export your Excel file as CSV and upload."
+        )
       );
       return;
     }
@@ -726,7 +730,7 @@ Email: mekhasolutions@gmail.com
 
       const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
       if (lines.length < 2) {
-        alert("CSV looks empty.");
+        alert(t("csvLooksEmpty", "CSV looks empty."));
         return;
       }
 
@@ -792,22 +796,42 @@ Email: mekhasolutions@gmail.com
       }
 
       if (!newItems.length) {
-        alert("No valid rows found in CSV.");
+        alert(
+          t("noValidRowsMsg", "No valid rows found in CSV.")
+        );
         return;
       }
 
       setProducts((prev) => [...prev, ...newItems]);
-      alert(`Bulk upload complete: added ${newItems.length} products.`);
+      alert(
+        t(
+          "bulkUploadComplete",
+          `Bulk upload complete: added ${newItems.length} products.`
+        )
+      );
     };
     reader.readAsText(file);
   }
 
   // UI HELPERS
   function getStockLabel(p) {
-    if (p.stock <= 0) return "Out of stock";
-    if (p.stock < 5) return `Only ${p.stock} left`;
-    return `${p.stock} in stock`;
+    if (p.stock <= 0) return t("outOfStockLabel", "Out of stock");
+    if (p.stock < 5)
+      return t("onlyXLeft", `Only ${p.stock} left`);
+    return t("inStockLabel", `${p.stock} in stock`);
   }
+  // PRODUCT MODAL HELPERS
+function openProductModal(product) {
+  if (!product) return;
+  setSelectedProduct(product);
+  setProductModalOpen(true);
+}
+
+function closeProductModal() {
+  setProductModalOpen(false);
+  setSelectedProduct(null);
+}
+
 
   function isLowStock(p) {
     return p.stock > 0 && p.stock < 5;
@@ -817,56 +841,121 @@ Email: mekhasolutions@gmail.com
   function renderAboutContent() {
     return (
       <>
-        <h2 className="about-title">About Mekha Solutions &amp; Services</h2>
+        <h2 className="about-title">
+          {t(
+            "aboutTitle",
+            "About Mekha CCTV Solutions & Services"
+          )}
+        </h2>
         <p className="about-subtitle">
-          Mekha Solutions &amp; Services is a{" "}
-          <strong>security &amp; IT solutions store in Davangere, Karnataka</strong>, run
-          by <strong>Naresh Mekha</strong>. We help homes, shops, schools, hospitals and
-          small businesses stay secure and connected.
+          {t(
+            "aboutSubtitle",
+            "Mekha CCTV Solutions & Services is a security & IT solutions store in Davangere, Karnataka, run by Naresh Mekha. We help homes, shops, schools, hospitals and small businesses stay secure and connected."
+          )}
         </p>
 
         <div className="about-grid">
           <div className="about-col">
-            <h3>What we do</h3>
+            <h3>{t("whatWeDoTitle", "What we do")}</h3>
             <ul>
-              <li>✅ CCTV camera setup &amp; maintenance</li>
-              <li>✅ NVR / DVR, hard disks &amp; racks</li>
-              <li>✅ Wi-Fi routers, network devices &amp; cabling</li>
-              <li>✅ Smart door bells &amp; wireless cameras</li>
-              <li>✅ System PCs, monitors &amp; power solutions (SMPS, UPS)</li>
+              <li>
+                {t(
+                  "whatWeDo1",
+                  "✅ CCTV camera setup & maintenance"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whatWeDo2",
+                  "✅ NVR / DVR, hard disks & racks"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whatWeDo3",
+                  "✅ Wi-Fi routers, network devices & cabling"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whatWeDo4",
+                  "✅ Smart door bells & wireless cameras"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whatWeDo5",
+                  "✅ System PCs, monitors & power solutions (SMPS, UPS)"
+                )}
+              </li>
             </ul>
           </div>
 
           <div className="about-col">
-            <h3>Why customers like us</h3>
+            <h3>
+              {t("whyCustomersLikeUsTitle", "Why customers like us")}
+            </h3>
             <ul>
-              <li>🧑‍🔧 On-site visit, installation &amp; neat wiring</li>
-              <li>📱 Mobile view setup &amp; training</li>
-              <li>♻ Upgrade existing CCTV / reuse hardware where possible</li>
-              <li>💬 Direct WhatsApp support with photos &amp; videos</li>
-              <li>📍 Store located near Shamanur Road, Davangere – easy access</li>
+              <li>
+                {t(
+                  "whyCustomers1",
+                  "🧑‍🔧 On-site visit, installation & neat wiring"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whyCustomers2",
+                  "📱 Mobile view setup & training"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whyCustomers3",
+                  "♻ Upgrade existing CCTV / reuse hardware where possible"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whyCustomers4",
+                  "💬 Direct WhatsApp support with photos & videos"
+                )}
+              </li>
+              <li>
+                {t(
+                  "whyCustomers5",
+                  "📍 Store located near Shamanur Road, Davangere – easy access"
+                )}
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="about-highlight">
           <p>
-            This website is built to make it easier for{" "}
-            <strong>Naresh Mekha</strong> to manage stock, pricing, and
-            invoices – while customers can quickly browse products, compare
-            options and raise enquiries without any login or signup.
+            {t(
+              "aboutHighlightText",
+              "This website is built to make it easier for Naresh Mekha to manage stock, pricing, and invoices – while customers can quickly browse products, compare options and raise enquiries without any login or signup."
+            )}
           </p>
         </div>
 
         <div className="about-cta">
           <p>
-            For demo, quotation or site visit in &amp; around Davangere:
+            {t(
+              "aboutCtaText",
+              "For demo, quotation or site visit in & around Davangere:"
+            )}
           </p>
           <p>
             📞 <strong>8050426215</strong> &nbsp;|&nbsp; 📧{" "}
             <strong>mekhasolutions@gmail.com</strong>
           </p>
-          <p>📍 Dollars Colony, Shamanur Road, Davangere – 577004</p>
+          <p>
+            {t(
+              "aboutAddressLine",
+              "📍 Dollars Colony, Shamanur Road, Davangere – 577004"
+            )}
+          </p>
         </div>
       </>
     );
@@ -876,41 +965,137 @@ Email: mekhasolutions@gmail.com
     <div className="app">
       {/* HEADER */}
       <header className="header">
-        <div className="header-left" onClick={goToShop} style={{ cursor: "pointer" }}>
-          <img src="/logo.jpg" alt="Mekha logo" className="logo" />
+        <div
+          className="header-left"
+          onClick={goToShop}
+          style={{ cursor: "pointer" }}
+        >
+          <img src="/logo.png" alt="Mekha logo" className="logo" />
           <div>
-            <h1 className="title">Mekha Solutions &amp; Services</h1>
+            <h1 className="title" onClick={goHome}
+  style={{ cursor: "pointer" }}>Mekha CCTV Solutions &amp; Services</h1>
             <p className="subtitle">
-              CCTV • Digital Boards • Electrical &amp; IT Solutions
+              {t(
+                "headerSubtitle",
+                "CCTV • Digital Boards • Electrical & IT Solutions"
+              )}
             </p>
           </div>
         </div>
 
         <div className="header-actions">
-          <button className="header-link" onClick={goToShop}>
-            Home
-          </button>
+          <button className="header-link" onClick={goHome}>home</button>
           <button className="header-link" onClick={goToAbout}>
-            About
+            {t("about", "About")}
           </button>
           <button
             className="cart-btn"
             onClick={() => setView("checkout")}
           >
-            Cart ({cart.length}) — ₹{cartTotal}
+            {t("cart", "Cart")} ({cart.length}) — ₹{cartTotal}
           </button>
+         <div className="lang-wrapper">
+  <LanguagePicker language={language} setLanguage={setLanguage} />
+</div>
+
         </div>
       </header>
 
       {/* SHOP VIEW */}
       {view === "shop" && (
         <main className="content">
+          {/* ================== HERO TOP SLIDER ================== */}
+{heroProducts.length > 0 && (
+  <section className="hero-section">
+    <Swiper
+      modules={[Navigation, Pagination, Zoom]}
+      navigation
+      pagination={{ clickable: true }}
+      loop={heroProducts.length > 1}
+      className="hero-swiper"
+    >
+      {heroProducts.map((p, index) => (
+        <SwiperSlide key={p.id}>
+          <div className="hero-slide">
+            <div
+              className="hero-image-wrapper"
+              onClick={() => openProductModal(p)}
+            >
+              {p.images?.length > 0 ? (
+                <img src={p.images[0]} alt={p.name} className="hero-image" />
+              ) : (
+                <div className="hero-image-placeholder">No image</div>
+              )}
+
+              {/* Badges */}
+              {p.mrp && p.price && p.mrp > p.price && (
+                <div className="hero-badge hero-badge-offer">
+                  Offer
+                </div>
+              )}
+              {index === 0 && (
+                <div className="hero-badge hero-badge-top">
+                  Top Seller
+                </div>
+              )}
+            </div>
+
+            <div className="hero-content">
+              <h2 className="hero-title">{p.name}</h2>
+              {p.description && (
+                <p className="hero-desc">
+                  {p.description.length > 140
+                    ? p.description.slice(0, 140) + "…"
+                    : p.description}
+                </p>
+              )}
+
+              <div className="hero-price-row">
+                <span className="hero-price">
+                  {p.price ? `₹${p.price}` : p.mrp ? `₹${p.mrp}` : "Ask price"}
+                </span>
+                {p.mrp && p.price && p.mrp > p.price && (
+                  <span className="hero-mrp">₹{p.mrp}</span>
+                )}
+              </div>
+
+              <div className="hero-cta-row">
+                <button
+                  className="btn-primary hero-btn"
+                  onClick={() => {
+                    addToCart(p);
+                    setView("checkout");
+                  }}
+                >
+                  Buy Now
+                </button>
+
+                <button
+                  className="btn-outline hero-btn-secondary"
+                  onClick={() => openProductModal(p)}
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </SwiperSlide>
+      ))}
+    </Swiper>
+  </section>
+)}
+
+
+
           {/* Search + Category */}
           <div className="search-row">
             <input
               type="text"
               className="search-box"
-              placeholder="Search products…"
+              placeholder={t(
+                "searchPlaceholder",
+                "Search products…"
+              )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -922,7 +1107,7 @@ Email: mekhasolutions@gmail.com
               {categoryOptions.map((c) => (
                 <option key={c} value={c}>
                   {c === "All"
-                    ? `All (${products.length})`
+                    ? `${t("allLabel", "All")} (${products.length})`
                     : `${c} (${categoryCounts[c] || 0})`}
                 </option>
               ))}
@@ -931,8 +1116,13 @@ Email: mekhasolutions@gmail.com
 
           {/* Products */}
           <div className="product-grid">
-            {filteredProducts.map((p) => (
-              <div key={p.id} className="product-card">
+           {homepageProducts.map((p) => (
+              
+<div
+  key={p.id}
+  className="product-card product-card-hover"
+  onClick={() => openProductModal(p)}
+>
                 <div className="product-image-wrapper">
                   {p.images && p.images.length > 0 ? (
                     <img
@@ -942,7 +1132,7 @@ Email: mekhasolutions@gmail.com
                     />
                   ) : (
                     <div className="product-image-placeholder">
-                      <span>No image</span>
+                      <span>{t("noImage", "No image")}</span>
                     </div>
                   )}
                 </div>
@@ -957,7 +1147,7 @@ Email: mekhasolutions@gmail.com
                         ? `₹${p.price}`
                         : p.mrp
                         ? `₹${p.mrp}`
-                        : "Ask price"}
+                        : t("askPrice", "Ask price")}
                     </span>
                     {p.mrp && p.price && p.mrp > p.price && (
                       <span className="mrp">₹{p.mrp}</span>
@@ -981,46 +1171,32 @@ Email: mekhasolutions@gmail.com
 
                   {isLowStock(p) && (
                     <p className="stock-warning">
-                      ⚠ Low stock – hurry up!
+                      {t(
+                        "lowStockWarning",
+                        "⚠ Low stock – hurry up!"
+                      )}
                     </p>
                   )}
 
                   <div className="card-actions-row">
-                    <button
-                      type="button"
-                      className={`btn-chip ${
-                        wishlist.includes(p.id) ? "active" : ""
-                      }`}
-                      onClick={() => toggleWishlist(p.id)}
-                    >
-                      {wishlist.includes(p.id)
-                        ? "♥ Wishlisted"
-                        : "♡ Wishlist"}
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn-chip ${
-                        compareList.includes(p.id) ? "active" : ""
-                      }`}
-                      onClick={() => toggleCompare(p.id)}
-                    >
-                      ⇄ Compare
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-chip"
-                      onClick={() => downloadBrochure(p)}
-                    >
-                      ⬇ Brochure
-                    </button>
-                  </div>
-
+  <button
+    type="button"
+    className={`btn-chip ${wishlist.includes(p.id) ? "active" : ""}`}
+    onClick={() => toggleWishlist(p.id)}
+  >
+    {wishlist.includes(p.id)
+      ? t("wishlisted", "♥ Wishlisted")
+      : t("wishlist", "♡ Wishlist")}
+  </button>
+</div>
                   <button
                     className="btn-primary"
                     onClick={() => addToCart(p)}
                     disabled={p.stock <= 0}
                   >
-                    {p.stock <= 0 ? "Out of stock" : "Add to Cart"}
+                    {p.stock <= 0
+                      ? t("outOfStock", "Out of stock")
+                      : t("addToCart", "Add to Cart")}
                   </button>
                 </div>
               </div>
@@ -1028,29 +1204,116 @@ Email: mekhasolutions@gmail.com
 
             {filteredProducts.length === 0 && (
               <p className="empty-text">
-                No products found. Try another search or category, or add
-                products in Admin.
+                {t(
+                  "noProductsFound",
+                  "No products found. Try another search or category, or add products in Admin."
+                )}
               </p>
             )}
           </div>
+ {/* Update your View All button: */}
+  {filteredProducts.length > 10 && !showAllProducts && (
+  <div style={{ textAlign: "center", marginTop: "10px" }}>
+    <button
+      className="btn-primary"
+      onClick={() => {
+        setCategory("All");
+        setShowAllProducts(true);   // ← IMPORTANT
+      }}
+    >
+      View All Products ({filteredProducts.length})
+    </button>
+  </div>
+)}
+
+          {/* ⭐ GOOGLE REVIEWS SECTION (Google + User Review Form) */}
+<section className="google-reviews-section" style={{ marginTop: "35px" }}>
+  <h2 style={{ textAlign: "center", marginBottom: "12px" }}>
+    ⭐ Customer Reviews & Ratings
+  </h2>
+
+  {/* Google Reviews Iframe */}
+  <iframe
+  title="google-reviews-widget"
+    src="https://widgets.sociablekit.com/google-reviews/iframe/25625435"
+    width="100%"
+    height="450"
+    style={{ border: "none", borderRadius: "8px" }}
+  ></iframe>
+{/* ⭐⭐⭐⭐⭐ REVIEW INPUT BELOW GOOGLE REVIEWS */}
+  <section className="write-review-section">
+  <h2>Write a Review</h2>
+
+  {/* ⭐ Star Rating */}
+  <div className="star-rating">
+    {[1,2,3,4,5].map((star) => (
+      <span
+        key={star}
+        className={reviewRating >= star ? "star filled" : "star"}
+        onClick={() => setReviewRating(star)}
+      >
+        ★
+      </span>
+    ))}
+  </div>
+
+  {/* Review Text */}
+  <textarea
+    placeholder="Share your experience..."
+    value={reviewText}
+    onChange={(e) => setReviewText(e.target.value)}
+    className="review-textarea"
+  />
+
+  {/* Image Upload */}
+  <div className="upload-wrapper">
+  <label className="upload-btn">
+    📸 Upload Images
+    <input
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={handleReviewImageUpload}
+      style={{ display: "none" }}
+    />
+  </label>
+  </div>
+  {/* Preview Selected Images */}
+  <div className="review-image-preview">
+    {reviewImages.map((img, index) => (
+      <img key={index} src={img} className="preview-img" alt="review upload" />
+    ))}
+  </div>
+
+  <button className="submit-review-btn">
+    Submit Review
+  </button>
+</section>
+</section>
+
 
           {/* Compare panel */}
           {compareList.length > 0 && (
             <section className="compare-panel">
-              <h3>Compare ({compareList.length})</h3>
+              <h3>
+                {t("compareTitle", "Compare")} (
+                {compareList.length})
+              </h3>
               <div className="compare-scroll">
                 {products
                   .filter((p) => compareList.includes(p.id))
                   .map((p) => (
                     <div key={p.id} className="compare-card">
                       <h4>{p.name}</h4>
-                      <p className="compare-category">{p.category}</p>
+                      <p className="compare-category">
+                        {p.category}
+                      </p>
                       <p className="compare-price">
                         {p.price
                           ? `₹${p.price}`
                           : p.mrp
                           ? `₹${p.mrp}`
-                          : "Ask"}
+                          : t("askLabel", "Ask")}
                       </p>
                       <p className="compare-stock">
                         {getStockLabel(p)}
@@ -1063,45 +1326,10 @@ Email: mekhasolutions@gmail.com
                 className="btn-small btn-outline"
                 onClick={() => setCompareList([])}
               >
-                Clear compare
+                {t("clearCompare", "Clear compare")}
               </button>
             </section>
           )}
-
-          {/* Feedback */}
-          <section className="feedback-card">
-            <h2>Rate Your Experience</h2>
-            <div className="star-row">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <span
-                  key={n}
-                  className={`star ${rating >= n ? "active" : ""}`}
-                  onClick={() => setRating(n)}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-            <textarea
-              className="input-text"
-              placeholder="Write feedback…"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-            <button className="btn-primary" onClick={submitFeedback}>
-              Submit
-            </button>
-
-            {feedbackList.map((f, i) => (
-              <div key={i} className="feedback-item">
-                <div className="stars">
-                  {"★".repeat(f.rating)}
-                  {"☆".repeat(5 - f.rating)}
-                </div>
-                <p>{f.comment}</p>
-              </div>
-            ))}
-          </section>
         </main>
       )}
 
@@ -1109,12 +1337,14 @@ Email: mekhasolutions@gmail.com
       {view === "checkout" && (
         <main className="checkout">
           <button className="back-btn" onClick={goToShop}>
-            ← Back to shop
+            {t("backToShop", "← Back to shop")}
           </button>
 
-          <h2>Your Cart</h2>
+          <h2>{t("yourCart", "Your Cart")}</h2>
 
-          {cart.length === 0 && <p>Cart is empty.</p>}
+          {cart.length === 0 && (
+            <p>{t("cartEmptyMsg", "Cart is empty.")}</p>
+          )}
 
           {cart.map((c) => (
             <div key={c.product.id} className="checkout-item">
@@ -1127,29 +1357,44 @@ Email: mekhasolutions@gmail.com
                   updateQty(c.product.id, e.target.value)
                 }
               />
-              <strong>₹{(c.product.price || 0) * c.qty}</strong>
+              <strong>
+                ₹{(c.product.price || 0) * c.qty}
+              </strong>
             </div>
           ))}
 
-          <h3>Total: ₹{cartTotal}</h3>
+          <h3>
+            {t("totalLabel", "Total")}: ₹{cartTotal}
+          </h3>
 
           <section className="checkout-details">
-            <h3>Customer Details</h3>
+            <h3>
+              {t("customerDetails", "Customer Details")}
+            </h3>
             <input
               className="input-text"
-              placeholder="Full name"
+              placeholder={t(
+                "fullNamePlaceholder",
+                "Full name"
+              )}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
             <input
               className="input-text"
-              placeholder="Phone number"
+              placeholder={t(
+                "phonePlaceholder",
+                "Phone number"
+              )}
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
             />
             <textarea
               className="input-text"
-              placeholder="Full address"
+              placeholder={t(
+                "addressPlaceholder",
+                "Full address"
+              )}
               value={customerAddress}
               onChange={(e) =>
                 setCustomerAddress(e.target.value)
@@ -1159,7 +1404,7 @@ Email: mekhasolutions@gmail.com
               className="btn-primary"
               onClick={handleGenerateInvoice}
             >
-              Generate Invoice
+              {t("generateInvoice", "Generate Invoice")}
             </button>
           </section>
         </main>
@@ -1169,7 +1414,7 @@ Email: mekhasolutions@gmail.com
       {view === "invoice" && invoiceData && (
         <main className="invoice">
           <button className="back-btn" onClick={goToShop}>
-            ← Back to shop
+            {t("backToShop", "← Back to shop")}
           </button>
 
           <div className="invoice-card">
@@ -1177,23 +1422,30 @@ Email: mekhasolutions@gmail.com
               <div>
                 <h2>Mekha Solutions &amp; Services</h2>
                 <p>
-                  Dollars Colony, Shamanur Road, Davangere – 577004
+                  {t(
+                    "invoiceAddressLine",
+                    "Dollars Colony, Shamanur Road, Davangere – 577004"
+                  )}
                   <br />
                   📞 8050426215 | 📧 mekhasolutions@gmail.com
                 </p>
               </div>
               <div className="invoice-meta">
                 <p>
-                  <strong>Invoice #</strong> {invoiceData.invoiceNumber}
+                  <strong>
+                    {t("invoiceNumberLabel", "Invoice #")}
+                  </strong>{" "}
+                  {invoiceData.invoiceNumber}
                 </p>
                 <p>
-                  <strong>Date</strong> {invoiceData.date}
+                  <strong>{t("dateLabel", "Date")}</strong>{" "}
+                  {invoiceData.date}
                 </p>
               </div>
             </header>
 
             <section className="invoice-section">
-              <h3>Bill To</h3>
+              <h3>{t("billTo", "Bill To")}</h3>
               <p>
                 {invoiceData.customerName} <br />
                 {invoiceData.customerPhone} <br />
@@ -1202,14 +1454,18 @@ Email: mekhasolutions@gmail.com
             </section>
 
             <section className="invoice-section">
-              <h3>Items</h3>
+              <h3>{t("itemsLabel", "Items")}</h3>
               <table className="invoice-table">
                 <thead>
                   <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>Price (₹)</th>
-                    <th>Total (₹)</th>
+                    <th>{t("itemHeader", "Item")}</th>
+                    <th>{t("qtyHeader", "Qty")}</th>
+                    <th>
+                      {t("pricePerHeader", "Price (₹)")}
+                    </th>
+                    <th>
+                      {t("totalRowHeader", "Total (₹)")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1226,17 +1482,31 @@ Email: mekhasolutions@gmail.com
                 </tbody>
               </table>
               <div className="invoice-total">
-                <strong>Grand Total: ₹{invoiceData.total}</strong>
+                <strong>
+                  {t("grandTotal", "Grand Total")}: ₹
+                  {invoiceData.total}
+                </strong>
               </div>
             </section>
 
             <footer className="invoice-footer-text">
-              <p>Thank you for your business!</p>
+              <p>
+                {t(
+                  "invoiceThanks",
+                  "Thank you for your business!"
+                )}
+              </p>
             </footer>
           </div>
 
-          <button className="btn-primary" onClick={handlePrintInvoice}>
-            Print / Download Invoice
+          <button
+            className="btn-primary"
+            onClick={handlePrintInvoice}
+          >
+            {t(
+              "printDownloadInvoice",
+              "Print / Download Invoice"
+            )}
           </button>
         </main>
       )}
@@ -1254,15 +1524,19 @@ Email: mekhasolutions@gmail.com
       {view === "admin" && (
         <main className="admin">
           <button className="back-btn" onClick={goToShop}>
-            ← Back to shop
+            {t("backToShop", "← Back to shop")}
           </button>
+
+
 
           {!isAdminLoggedIn ? (
             <section className="admin-login-card">
-              <h2>Admin Login</h2>
+              <h2>{t("adminLoginTitle", "Admin Login")}</h2>
               <p className="admin-login-hint">
-                (Open URL with <code>#/admin-9980</code> to access
-                this page)
+                {t(
+                  "adminLoginHint",
+                  "(Open URL with #/admin-9980 to access this page)"
+                )}
               </p>
               <form
                 onSubmit={handleAdminLogin}
@@ -1270,44 +1544,70 @@ Email: mekhasolutions@gmail.com
               >
                 <input
                   className="input-text"
-                  placeholder="Username"
+                  placeholder={t(
+                    "adminUsernamePlaceholder",
+                    "Username"
+                  )}
                   value={adminUser}
-                  onChange={(e) => setAdminUser(e.target.value)}
+                  onChange={(e) =>
+                    setAdminUser(e.target.value)
+                  }
                 />
                 <input
                   className="input-text"
                   type="password"
-                  placeholder="Password"
+                  placeholder={t(
+                    "adminPasswordPlaceholder",
+                    "Password"
+                  )}
                   value={adminPass}
-                  onChange={(e) => setAdminPass(e.target.value)}
+                  onChange={(e) =>
+                    setAdminPass(e.target.value)
+                  }
                 />
                 {adminError && (
-                  <p className="admin-error">{adminError}</p>
+                  <p className="admin-error">
+                    {adminError}
+                  </p>
                 )}
-                <button type="submit" className="btn-primary">
-                  Login
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  {t("loginButton", "Login")}
                 </button>
               </form>
             </section>
           ) : (
             <>
+            
               <div className="admin-top-row">
-                <h2>Admin – Manage Products</h2>
+                <h2>
+                  {t(
+                    "adminManageProductsTitle",
+                    "Admin – Manage Products"
+                  )}
+                </h2>
                 <button
                   className="header-link"
                   onClick={handleAdminLogout}
                 >
-                  Logout
+                  {t("logoutButton", "Logout")}
                 </button>
               </div>
 
               {/* Dashboard */}
               <section className="admin-dashboard">
-                <h3>Store Overview</h3>
+                <h3>
+                  {t("storeOverview", "Store Overview")}
+                </h3>
                 <div className="dashboard-cards">
                   <div className="dash-card">
                     <div className="dash-card-label">
-                      Total Products
+                      {t(
+                        "dashTotalProducts",
+                        "Total Products"
+                      )}
                     </div>
                     <div className="dash-card-value">
                       {products.length}
@@ -1315,7 +1615,10 @@ Email: mekhasolutions@gmail.com
                   </div>
                   <div className="dash-card">
                     <div className="dash-card-label">
-                      Total Sales (Invoices)
+                      {t(
+                        "dashTotalSales",
+                        "Total Sales (Invoices)"
+                      )}
                     </div>
                     <div className="dash-card-value">
                       {salesHistory.length}
@@ -1323,7 +1626,10 @@ Email: mekhasolutions@gmail.com
                   </div>
                   <div className="dash-card">
                     <div className="dash-card-label">
-                      Revenue (Approx)
+                      {t(
+                        "dashRevenueApprox",
+                        "Revenue (Approx)"
+                      )}
                     </div>
                     <div className="dash-card-value">
                       ₹{totalRevenue}
@@ -1331,7 +1637,10 @@ Email: mekhasolutions@gmail.com
                   </div>
                   <div className="dash-card">
                     <div className="dash-card-label">
-                      Low Stock Items
+                      {t(
+                        "dashLowStockItems",
+                        "Low Stock Items"
+                      )}
                     </div>
                     <div className="dash-card-value">
                       {lowStockItems.length}
@@ -1369,7 +1678,12 @@ Email: mekhasolutions@gmail.com
 
                 {lowStockItems.length > 0 && (
                   <div className="low-stock-list">
-                    <h4>Low Stock Alerts</h4>
+                    <h4>
+                      {t(
+                        "lowStockAlertsTitle",
+                        "Low Stock Alerts"
+                      )}
+                    </h4>
                     <ul>
                       {lowStockItems.map((p) => (
                         <li key={p.id}>
@@ -1382,15 +1696,20 @@ Email: mekhasolutions@gmail.com
 
                 {priceHistory.length > 0 && (
                   <div className="price-history">
-                    <h4>Recent Price Changes</h4>
+                    <h4>
+                      {t(
+                        "recentPriceChangesTitle",
+                        "Recent Price Changes"
+                      )}
+                    </h4>
                     <ul>
                       {priceHistory
                         .slice(-5)
                         .reverse()
                         .map((h, idx) => (
                           <li key={idx}>
-                            {h.name}: ₹{h.oldPrice} → ₹{h.newPrice} (
-                            {h.date})
+                            {h.name}: ₹{h.oldPrice} → ₹
+                            {h.newPrice} ({h.date})
                           </li>
                         ))}
                     </ul>
@@ -1398,10 +1717,16 @@ Email: mekhasolutions@gmail.com
                 )}
               </section>
 
+
               {/* Export & bulk upload */}
               <section className="admin-tools-row">
                 <div className="admin-export">
-                  <span>Export Products:</span>
+                  <span>
+                    {t(
+                      "exportProductsLabel",
+                      "Export Products:"
+                    )}
+                  </span>
                   <button
                     type="button"
                     className="btn-small btn-outline"
@@ -1414,7 +1739,7 @@ Email: mekhasolutions@gmail.com
                     className="btn-small btn-outline"
                     onClick={exportExcelLike}
                   >
-                    Excel
+                    {t("excelLabel", "Excel")}
                   </button>
                   <button
                     type="button"
@@ -1425,7 +1750,12 @@ Email: mekhasolutions@gmail.com
                   </button>
                 </div>
                 <div className="admin-bulk">
-                  <span>Bulk Upload (.csv):</span>
+                  <span>
+                    {t(
+                      "bulkUploadLabel",
+                      "Bulk Upload (.csv):"
+                    )}
+                  </span>
                   <input
                     type="file"
                     accept=".csv"
@@ -1436,11 +1766,14 @@ Email: mekhasolutions@gmail.com
 
               {/* Add Product */}
               <section className="admin-form">
-                <h3>Add Product</h3>
+                <h3>{t("addProductTitle", "Add Product")}</h3>
                 <form onSubmit={handleAddProduct}>
                   <input
                     className="input-text"
-                    placeholder="Product name"
+                    placeholder={t(
+                      "productNamePlaceholder",
+                      "Product name"
+                    )}
                     value={newProduct.name}
                     onChange={(e) =>
                       setNewProduct({
@@ -1455,7 +1788,10 @@ Email: mekhasolutions@gmail.com
                     <input
                       className="input-text"
                       list="category-list"
-                      placeholder="Category (type or choose)"
+                      placeholder={t(
+                        "categoryPlaceholder",
+                        "Category (type or choose)"
+                      )}
                       value={newProduct.category}
                       onChange={(e) =>
                         setNewProduct({
@@ -1475,7 +1811,10 @@ Email: mekhasolutions@gmail.com
 
                   <input
                     className="input-text"
-                    placeholder="MRP (₹, optional)"
+                    placeholder={t(
+                      "mrpPlaceholder",
+                      "MRP (₹, optional)"
+                    )}
                     type="number"
                     value={newProduct.mrp}
                     onChange={(e) =>
@@ -1487,7 +1826,10 @@ Email: mekhasolutions@gmail.com
                   />
                   <input
                     className="input-text"
-                    placeholder="Selling price (₹, optional)"
+                    placeholder={t(
+                      "sellingPricePlaceholder",
+                      "Selling price (₹, optional)"
+                    )}
                     type="number"
                     value={newProduct.price}
                     onChange={(e) =>
@@ -1499,7 +1841,10 @@ Email: mekhasolutions@gmail.com
                   />
                   <input
                     className="input-text"
-                    placeholder="Stock count"
+                    placeholder={t(
+                      "stockCountPlaceholder",
+                      "Stock count"
+                    )}
                     type="number"
                     value={newProduct.stock}
                     onChange={(e) =>
@@ -1512,7 +1857,10 @@ Email: mekhasolutions@gmail.com
 
                   <textarea
                     className="input-text"
-                    placeholder="Description (optional)"
+                    placeholder={t(
+                      "descriptionPlaceholder",
+                      "Description (optional)"
+                    )}
                     value={newProduct.description}
                     onChange={(e) =>
                       setNewProduct({
@@ -1524,7 +1872,10 @@ Email: mekhasolutions@gmail.com
 
                   <div className="file-input-row">
                     <label className="file-label">
-                      Upload images
+                      {t(
+                        "uploadImagesLabel",
+                        "Upload images"
+                      )}
                       <input
                         type="file"
                         accept="image/*"
@@ -1547,25 +1898,37 @@ Email: mekhasolutions@gmail.com
                       )}
                   </div>
 
-                  <button type="submit" className="btn-primary">
-                    Save Product
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                  >
+                    {t(
+                      "saveProductButton",
+                      "Save Product"
+                    )}
                   </button>
                 </form>
               </section>
 
               {/* Products table */}
               <section className="admin-list">
-                <h3>Current Products ({products.length})</h3>
+                <h3>
+                  {t(
+                    "currentProductsTitle",
+                    "Current Products"
+                  )}{" "}
+                  ({products.length})
+                </h3>
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Image</th>
-                      <th>Name</th>
-                      <th>Category</th>
+                      <th>{t("imageHeader", "Image")}</th>
+                      <th>{t("nameHeader", "Name")}</th>
+                      <th>{t("categoryHeader", "Category")}</th>
                       <th>MRP</th>
-                      <th>Price</th>
-                      <th>Stock</th>
-                      <th>Actions</th>
+                      <th>{t("priceHeader", "Price")}</th>
+                      <th>{t("stockHeader", "Stock")}</th>
+                      <th>{t("actionsHeader", "Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1584,7 +1947,10 @@ Email: mekhasolutions@gmail.com
                               className="btn-small btn-outline"
                               onClick={() => openEditModal(p)}
                             >
-                              + Add Image
+                              {t(
+                                "addImageButton",
+                                "+ Add Image"
+                              )}
                             </button>
                           )}
                         </td>
@@ -1597,47 +1963,180 @@ Email: mekhasolutions@gmail.com
                           {isLowStock(p) && (
                             <span className="stock-warning-inline">
                               {" "}
-                              (Low)
+                              ({t("lowLabel", "Low")})
                             </span>
                           )}
                         </td>
                         <td>
-                          <button
-                            className="btn-small"
-                            onClick={() => openEditModal(p)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn-danger"
-                            onClick={() => handleDeleteProduct(p.id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
+  {/* ADD / REMOVE FROM DASHBOARD */}
+  {!featuredIds.includes(p.id) ? (
+    <button
+      className="btn-small btn-outline"
+      onClick={() => {
+        if (featuredIds.length >= 5) {
+          alert("Max 5 dashboard products allowed.");
+          return;
+        }
+        setFeaturedIds([...featuredIds, p.id]);
+      }}
+    >
+      + Add to Dashboard
+    </button>
+  ) : (
+    <button
+      className="btn-small btn-danger"
+      onClick={() =>
+        setFeaturedIds(featuredIds.filter(id => id !== p.id))
+      }
+    >
+      Remove
+    </button>
+  )}
+   {!top10Ids.includes(p.id) ? (
+  <button
+     className="btn-small btn-outline"
+     onClick={() => {
+     if (top10Ids.length >= 10) {
+       alert("You can select max 10 top-selling products.");
+       return;
+      }
+       setTop10Ids([...top10Ids, p.id]);
+    }}
+  >
+     Add to Top 10
+  </button>
+) : (
+  <button
+    className="btn-small btn-danger"
+  onClick={() => setTop10Ids(top10Ids.filter(id => id !== p.id))}
+  >
+    Remove Top 10
+  </button>
+ )}
+
+  <button
+    className="btn-small"
+    onClick={() => openEditModal(p)}
+  >
+    {t("editButton", "Edit")}
+  </button>
+
+  <button
+    className="btn-danger"
+    onClick={() => handleDeleteProduct(p.id)}
+  >
+    {t("deleteButton", "Delete")}
+  </button>
+</td>
+
                       </tr>
                     ))}
                     {products.length === 0 && (
                       <tr>
                         <td colSpan="7">
-                          No products yet. Add items using the form
-                          above.
+                          {t(
+                            "noProductsYetMsg",
+                            "No products yet. Add items using the form above."
+                          )}
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
                 <p className="admin-note">
-                  Products are loaded from <code>products.json</code>. Any
-                  new items you add here stay in memory until you connect
-                  a backend or save manually.
+                  {t(
+                    "productsLoadedFromJson",
+                    "Products are loaded from products.json. Any new items you add here stay in memory until you connect a backend or save manually."
+                  )}
                 </p>
               </section>
             </>
           )}
         </main>
       )}
+{/* ================= PRODUCT DETAILS MODAL ================= */}
+{productModalOpen && selectedProduct && (
+  <div className="modal-backdrop" onClick={closeProductModal}>
+    <div className="product-modal" onClick={(e) => e.stopPropagation()}>
+      
+      <div className="product-modal-header">
+        <h3>{selectedProduct.name}</h3>
+        <button className="modal-close-btn" onClick={closeProductModal}>✖</button>
+      </div>
 
+      <div className="product-modal-body">
+
+        {/* IMAGE SLIDER */}
+        <div className="product-modal-gallery">
+          <Swiper
+            modules={[Navigation, Pagination, Zoom]}
+            navigation
+            pagination={{ clickable: true }}
+            zoom
+            loop={selectedProduct.images?.length > 1}
+            className="product-swiper"
+          >
+            {(selectedProduct.images || []).map((img, i) => (
+              <SwiperSlide key={i}>
+                <div className="swiper-zoom-container">
+                  <img src={img} alt="" />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+
+        {/* DETAILS */}
+        <div className="product-modal-info">
+
+          <div className="product-modal-price-block">
+            <span className="product-modal-price">
+              {selectedProduct.price
+                ? `₹${selectedProduct.price}`
+                : selectedProduct.mrp
+                ? `₹${selectedProduct.mrp}`
+                : "Ask price"}
+            </span>
+
+            {selectedProduct.mrp &&
+              selectedProduct.price &&
+              selectedProduct.mrp > selectedProduct.price && (
+                <span className="product-modal-mrp">
+                  ₹{selectedProduct.mrp}
+                </span>
+              )}
+          </div>
+
+          <p className="product-modal-desc">
+            {selectedProduct.description || "No description available."}
+          </p>
+
+          <button
+            className="btn-primary"
+            onClick={() => {
+              addToCart(selectedProduct);
+              setView("checkout");
+              closeProductModal();
+            }}
+          >
+            Buy Now
+          </button>
+
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              addToCart(selectedProduct);
+              closeProductModal();
+            }}
+          >
+            Add to Cart
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       {/* EDIT MODAL */}
       {editModalOpen && editingProduct && (
         <div
@@ -1648,24 +2147,32 @@ Email: mekhasolutions@gmail.com
             className="modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Edit Product</h3>
+            <h3>{t("editProductTitle", "Edit Product")}</h3>
             <div className="modal-body">
               <input
                 className="input-text"
-                placeholder="Product name"
+                placeholder={t(
+                  "productNamePlaceholder",
+                  "Product name"
+                )}
                 value={editingProduct.name}
                 onChange={(e) =>
                   handleEditFieldChange("name", e.target.value)
                 }
               />
-
               <input
                 className="input-text"
                 list="category-list-modal"
-                placeholder="Category (type or choose)"
+                placeholder={t(
+                  "categoryPlaceholder",
+                  "Category (type or choose)"
+                )}
                 value={editingProduct.category}
                 onChange={(e) =>
-                  handleEditFieldChange("category", e.target.value)
+                  handleEditFieldChange(
+                    "category",
+                    e.target.value
+                  )
                 }
               />
               <datalist id="category-list-modal">
@@ -1678,7 +2185,10 @@ Email: mekhasolutions@gmail.com
 
               <input
                 className="input-text"
-                placeholder="MRP (₹, optional)"
+                placeholder={t(
+                  "mrpPlaceholder",
+                  "MRP (₹, optional)"
+                )}
                 type="number"
                 value={editingProduct.mrp}
                 onChange={(e) =>
@@ -1687,26 +2197,41 @@ Email: mekhasolutions@gmail.com
               />
               <input
                 className="input-text"
-                placeholder="Selling price (₹, optional)"
+                placeholder={t(
+                  "sellingPricePlaceholder",
+                  "Selling price (₹, optional)"
+                )}
                 type="number"
                 value={editingProduct.price}
                 onChange={(e) =>
-                  handleEditFieldChange("price", e.target.value)
+                  handleEditFieldChange(
+                    "price",
+                    e.target.value
+                  )
                 }
               />
               <input
                 className="input-text"
-                placeholder="Stock count"
+                placeholder={t(
+                  "stockCountPlaceholder",
+                  "Stock count"
+                )}
                 type="number"
                 value={editingProduct.stock}
                 onChange={(e) =>
-                  handleEditFieldChange("stock", e.target.value)
+                  handleEditFieldChange(
+                    "stock",
+                    e.target.value
+                  )
                 }
               />
 
               <textarea
                 className="input-text"
-                placeholder="Description (optional)"
+                placeholder={t(
+                  "descriptionPlaceholder",
+                  "Description (optional)"
+                )}
                 value={editingProduct.description}
                 onChange={(e) =>
                   handleEditFieldChange(
@@ -1718,7 +2243,10 @@ Email: mekhasolutions@gmail.com
 
               <div className="file-input-row">
                 <label className="file-label">
-                  Upload images
+                  {t(
+                    "uploadImagesLabel",
+                    "Upload images"
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -1748,21 +2276,22 @@ Email: mekhasolutions@gmail.com
                 className="btn-primary"
                 onClick={saveEditProduct}
               >
-                Save
+                {t("saveButton", "Save")}
               </button>
               <button
                 type="button"
                 className="btn-danger"
                 onClick={closeEditModal}
               >
-                Cancel
+                {t("cancelButton", "Cancel")}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ABOUT MODAL (footer + floating button) */}
+      
+{/* ABOUT MODAL (footer + floating button) */}
       {aboutModalOpen && (
         <div
           className="modal-backdrop"
@@ -1779,7 +2308,7 @@ Email: mekhasolutions@gmail.com
                 className="btn-primary"
                 onClick={() => setAboutModalOpen(false)}
               >
-                Close
+                {t("closeButton", "Close")}
               </button>
             </div>
           </div>
@@ -1787,77 +2316,61 @@ Email: mekhasolutions@gmail.com
       )}
 
       {/* FOOTER */}
-      <footer className="footer">
-        <p>Dollars Colony, Shamanur Road, Davangere – 577004</p>
-        <p>📞 8050426215 | 📧 mekhasolutions@gmail.com</p>
-        <p className="footer-whatsapp">
-          <a
-            href="https://wa.me/918050426215"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <span className="whatsapp-icon">🟢</span>
-            <span className="whatsapp-text">
-              Chat on WhatsApp: 8050426215
-            </span>
-          </a>
-        </p>
-        <button
-          type="button"
-          className="footer-about-btn"
-          onClick={() => setAboutModalOpen(true)}
-        >
-          About this store
-        </button>
-        <p className="copyright">
-          © {new Date().getFullYear()} Mekha Solutions &amp; Services
-        </p>
-      </footer>
 
-      {/* CHAT FLOAT BUTTON */}
-      <button className="chat-btn" onClick={toggleChat}>
-        💬
-      </button>
+     <footer className="footer footer-static">
+  <div className="footer-row">
 
-      {/* ABOUT FLOAT BUTTON */}
-      <button
-        className="about-fab"
-        onClick={() => setAboutModalOpen(true)}
+    {/* LEFT — WHATSAPP FIRST */}
+    <div className="footer-col">
+      <a
+        href="https://wa.me/+918050426215"
+        target="_blank"
+        rel="noreferrer"
+        className="footer-whatsapp-link"
       >
-        ℹ️
-      </button>
+        <img src="/whatsapp.png" alt="WhatsApp" className="footer-whatsapp-icon" />
+        Chat on WhatsApp: +918050426215
+      </a>
 
-      {/* CHATBOX */}
-      {chatOpen && (
-        <div className="chatbox">
-          <div className="chatbox-header">
-            Chat with Us
-            <button
-              className="close-chat"
-              onClick={() => setChatOpen(false)}
-            >
-              ✖
-            </button>
-          </div>
+      <a href="#/about"
+        className="footer-link"
+        onClick={(e) => {
+          e.preventDefault();
+          setAboutModalOpen(true);
+        }}
+      >
+        About Us.
+      </a>
+    </div>
 
-          <div className="chatbox-messages">
-            {chatHistory.map((m, i) => (
-              <div key={i} className={`msg ${m.sender}`}>
-                {m.text}
-              </div>
-            ))}
-          </div>
+    {/* MIDDLE — ADDRESS + YEAR */}
+    <div className="footer-col footer-center">
+      <a
+        href="https://www.google.com/maps/place/Mekha+CCTV+Solutions+%26+Services/"
+        target="_blank"
+        rel="noreferrer"
+        className="footer-link"
+      >
+        📍#536/10, No.4B Cross, Dollars Colony, Shamanur Road, Davangere – 577004
+      </a>
+      <span className="footer-year">
+        © {new Date().getFullYear()} Mekha CCTV Solutions & Services
+      </span>
+    </div>
 
-          <div className="chatbox-input">
-            <input
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Ask a question…"
-            />
-            <button onClick={sendChat}>Send</button>
-          </div>
-        </div>
-      )}
+    {/* RIGHT — PHONE + EMAIL */}
+    <div className="footer-col footer-right">
+      <a href="tel:+918050426215" className="footer-link">
+        📞 +918050426215
+      </a>
+
+      <a href="mailto:mekhasolutions@gmail.com" className="footer-link">
+        📧 mekhasolutions@gmail.com
+      </a>
+    </div>
+
+  </div>
+</footer>
     </div>
   );
 }
