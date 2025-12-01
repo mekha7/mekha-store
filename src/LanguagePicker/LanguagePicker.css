@@ -1,0 +1,9 @@
+.language-picker {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  cursor: pointer;
+}
