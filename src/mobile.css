@@ -1,0 +1,159 @@
+/* =================================
+   MOBILE & RESPONSIVE ADJUSTMENTS
+================================= */
+
+/* Services page spacing on smaller screens */
+@media (max-width: 768px) {
+  .services-page {
+    padding-top: 120px;   /* header is taller on mobile */
+    padding-bottom: 110px;/* space above fixed footer */
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Tablet breakpoint tweaks */
+@media (max-width: 900px) {
+  .hero-slide {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .hero-image-wrapper {
+    height: 220px;
+  }
+
+  .hero-section {
+    margin-top: 96px;
+  }
+}
+
+/* Mobile-first adjustments */
+@media (max-width: 768px) {
+  /* HEADER STACK */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+  }
+
+  .header-actions {
+    align-self: stretch;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hero-section {
+    margin-top: 110px;
+    padding: 0 10px;
+  }
+
+  .festival-banner {
+    margin-top: 110px;
+    padding: 8px 10px;
+  }
+
+  .search-row {
+    top: 120px;
+    padding: 8px 10px;
+  }
+
+  .category-select {
+    width: 100%;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 10px 10px 90px;
+    gap: 10px;
+  }
+
+  .product-card {
+    padding: 10px;
+  }
+
+  .product-image-wrapper {
+    height: 130px;
+  }
+
+  .product-modal {
+    width: 100%;
+    max-height: 100vh;
+    padding: 14px;
+  }
+
+  .product-modal-body {
+    flex-direction: column;
+  }
+
+  .product-swiper img {
+    height: 260px;
+  }
+
+  .admin-form form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table {
+    font-size: 10px;
+  }
+
+  .admin-table-image {
+    width: 36px;
+    height: 36px;
+  }
+
+  .footer-static {
+    padding: 10px;
+  }
+
+  .footer-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .write-review-section {
+    padding: 12px;
+  }
+
+  .preview-img {
+    width: 70px;
+    height: 70px;
+  }
+
+  .chatbox {
+    right: 10px;
+    width: 92%;
+  }
+
+  .chat-btn {
+    right: 10px;
+  }
+
+  .services-page {
+    padding: 16px;
+    margin: 90px auto 90px;
+  }
+}
+
+/* Sliding banner tweaks */
+@media (max-width: 768px) {
+  .sliding-banner-wrapper {
+    margin-top: 110px; /* header larger on mobile */
+  }
+
+  .sliding-banner span {
+    font-size: 14px;
+  }
+}
