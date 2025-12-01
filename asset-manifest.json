@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/mekha-store/static/css/main.383285dd.css",
+    "main.css": "/mekha-store/static/css/main.b6df4a77.css",
     "main.js": "/mekha-store/static/js/main.78788d19.js",
     "static/js/453.2549d7c9.chunk.js": "/mekha-store/static/js/453.2549d7c9.chunk.js",
     "index.html": "/mekha-store/index.html",
-    "main.383285dd.css.map": "/mekha-store/static/css/main.383285dd.css.map",
+    "main.b6df4a77.css.map": "/mekha-store/static/css/main.b6df4a77.css.map",
     "main.78788d19.js.map": "/mekha-store/static/js/main.78788d19.js.map",
     "453.2549d7c9.chunk.js.map": "/mekha-store/static/js/453.2549d7c9.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.383285dd.css",
+    "static/css/main.b6df4a77.css",
     "static/js/main.78788d19.js"
   ]
 }
