@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import "./App.css";
+import "./mobile.css";
 import LanguagePicker, { translations } from "./LanguagePicker";
 import { supabase } from "./supabase";
 
