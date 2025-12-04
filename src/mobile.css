@@ -1,130 +1,129 @@
-/* =================================
-   MOBILE & RESPONSIVE ADJUSTMENTS
-================================= */
+/* ============================
+   FIXED MOBILE RESPONSIVE UI
+=============================== */
 
-/* Services page spacing on smaller screens */
 @media (max-width: 768px) {
-  .services-page {
-    padding-top: 120px;   /* header is taller on mobile */
-    padding-bottom: 110px;/* space above fixed footer */
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-}
 
-/* Tablet breakpoint tweaks */
-@media (max-width: 900px) {
-  .hero-slide {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-
-  .hero-image-wrapper {
-    height: 220px;
-  }
-
-  .hero-section {
-    margin-top: 96px;
-  }
-}
-
-/* Mobile-first adjustments */
-@media (max-width: 768px) {
-  /* HEADER STACK */
+  /* -------- HEADER -------- */
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
     padding: 10px 12px;
+    gap: 4px;
+    /* height auto, don't force 72px */
   }
 
-  .title {
-    font-size: 16px;
+  .title { font-size: 17px; }
+  .subtitle { font-size: 10px; }
+
+  /* -------- MAIN LAYOUT SPACING -------- */
+  /* Content under fixed header */
+  .content {
+    padding-top: 90px;      /* space for header */
   }
 
-  .subtitle {
-    font-size: 10px;
+  .checkout,
+  .invoice,
+  .about-page,
+  .admin {
+    margin: 90px auto 60px;
+    padding: 14px 12px 20px;
   }
 
-  .header-actions {
-    align-self: stretch;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 6px;
+  .services-page {
+    margin: 90px auto 60px !important;
+    padding: 14px 12px 20px !important;
   }
 
-  .hero-section {
-    margin-top: 110px;
-    padding: 0 10px;
+  /* -------- HERO / BANNERS / SECTIONS -------- */
+  .hero-section,
+  .top10-section,
+  .google-reviews-section,
+  .sliding-banner-wrapper {
+    margin-top: 10px !important;
   }
 
-  .festival-banner {
-    margin-top: 110px;
-    padding: 8px 10px;
+  .hero-slide {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 14px;
   }
 
+  .hero-image-wrapper {
+    height: 200px !important;
+  }
+
+  /* -------- SLIDING BANNER -------- */
+  .sliding-banner-wrapper {
+    padding: 6px 0;
+  }
+
+  .sliding-banner span {
+    font-size: 14px;
+  }
+
+  /* -------- SEARCH ROW -------- */
+  /* On mobile keep it simple, not sticky */
   .search-row {
-    top: 120px;
-    padding: 8px 10px;
+    position: static !important;
+    top: auto !important;
+    padding: 10px 10px 6px;
+    background: transparent;
   }
 
   .category-select {
     width: 100%;
   }
 
+  /* -------- PRODUCT GRID -------- */
   .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 10px 10px 90px;
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 8px 10px 70px !important;
+    gap: 10px !important;
   }
 
   .product-card {
-    padding: 10px;
+    padding: 10px !important;
+    border-radius: 12px;
   }
 
   .product-image-wrapper {
-    height: 130px;
+    height: 135px !important;
   }
 
-  .product-modal {
-    width: 100%;
-    max-height: 100vh;
-    padding: 14px;
-  }
-
-  .product-modal-body {
-    flex-direction: column;
-  }
-
-  .product-swiper img {
-    height: 260px;
-  }
-
-  .admin-form form {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-table {
-    font-size: 10px;
-  }
-
-  .admin-table-image {
-    width: 36px;
-    height: 36px;
-  }
-
-  .footer-static {
+  /* -------- TOP10 SWIPER -------- */
+  .top10-card {
     padding: 10px;
   }
 
-  .footer-row {
-    flex-direction: column;
-    text-align: center;
-    gap: 6px;
+  /* -------- PRODUCT MODAL -------- */
+  .product-modal {
+    width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    padding: 14px !important;
+    overflow-y: auto;
   }
 
+  .product-modal-body {
+    flex-direction: column !important;
+    gap: 12px;
+  }
+
+  .product-swiper img {
+    height: 260px !important;
+    object-fit: contain;
+  }
+
+  /* Hide swiper arrows on mobile (swipe only) */
+  .swiper-button-next,
+  .swiper-button-prev {
+    display: none !important;
+  }
+
+  /* -------- WRITE REVIEW SECTION -------- */
   .write-review-section {
-    padding: 12px;
+    padding: 14px;
   }
 
   .preview-img {
@@ -132,28 +131,133 @@
     height: 70px;
   }
 
-  .chatbox {
-    right: 10px;
-    width: 92%;
+  /* -------- ADMIN PORTAL -------- */
+  .admin-form form {
+    grid-template-columns: 1fr !important;
   }
 
+  .admin-table {
+    font-size: 10px !important;
+  }
+
+  .admin-table-image {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* -------- CHAT WIDGET -------- */
   .chat-btn {
-    right: 10px;
+    bottom: 20px;
+    right: 16px;
   }
 
-  .services-page {
-    padding: 16px;
-    margin: 90px auto 90px;
+  .chatbox {
+    width: 92%;
+    right: 4%;
+    bottom: 70px;
+  }
+
+  /* -------- FOOTER (NOT FIXED ON MOBILE) -------- */
+  .footer-static {
+    position: relative !important;  /* remove fixed */
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    padding: 10px 12px !important;
+  }
+
+  .footer-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+  }
+
+  .footer-col {
+    align-items: center;
+  }
+
+  .footer-link {
+    font-size: 11px;
+  }
+
+  .footer-year {
+    font-size: 11px;
+  }
+
+  /* Remove extra bottom padding added for fixed footer */
+  body,
+  .app {
+    padding-bottom: 0 !important;
   }
 }
-
-/* Sliding banner tweaks */
+/* ============================================
+   MOBILE FIX — ADMIN PRODUCT TABLE
+=============================================== */
 @media (max-width: 768px) {
-  .sliding-banner-wrapper {
-    margin-top: 110px; /* header larger on mobile */
+
+  /* Wrap table in scroll container */
+  .admin-list {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .sliding-banner span {
-    font-size: 14px;
+  .admin-table {
+    min-width: 900px !important;  /* prevents column squishing */
+    font-size: 11px !important;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 6px !important;
+  }
+
+  /* Fix image column */
+  .admin-table-image {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  /* Buttons small but clear */
+  .btn-small,
+  .btn-danger {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Ensure "Featured" and "Top10" remain aligned */
+  td:nth-child(7),
+  td:nth-child(8) {
+    text-align: center !important;
+    min-width: 60px;
+  }
+
+  td:last-child {
+    min-width: 90px;
+    text-align: right;
+  }
+}
+@media (max-width: 768px) {
+  .services-table-wrapper {
+    margin-top: 10px !important;
+    padding: 0 !important;
+  }
+
+  .services-table {
+    font-size: 12px !important;
+  }
+
+  .services-table th,
+  .services-table td {
+    padding: 6px !important;
   }
 }
