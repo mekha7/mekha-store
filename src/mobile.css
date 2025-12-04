@@ -261,3 +261,82 @@
     padding: 6px !important;
   }
 }
+/* MOBILE HEADER — ONE ROW CLEAN LAYOUT */
+@media (max-width: 600px) {
+
+  /* Header wrapper */
+  .header-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+    padding: 6px 10px !important;
+    height: auto !important;
+  }
+
+  /* Logo */
+  .header-logo {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0;
+  }
+
+  /* Title text */
+  .header-title-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+    margin-right: 6px;
+  }
+
+  .header-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+  }
+
+  .header-subtitle {
+    font-size: 10px !important;
+    color: #ccc !important;
+    margin-top: -2px;
+    white-space: nowrap;
+  }
+
+  /* NAVIGATION IN ONE ROW */
+  .header-nav {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .header-nav a {
+    font-size: 12px !important;
+    padding: 4px 6px !important;
+  }
+
+  /* ACTIONS (CART + LANGUAGE) */
+  .header-actions {
+    display: flex !important;
+    gap: 6px !important;
+    align-items: center !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Language picker dropdown */
+  .language-picker select {
+    padding: 4px 6px !important;
+    font-size: 12px !important;
+  }
+
+  /* Fix search bar not visible */
+  .search-bar,
+  .category-bar {
+    margin-top: 6px !important;
+    z-index: 10 !important;
+  }
+}
