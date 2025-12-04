@@ -506,17 +506,7 @@ function AdminPortal() {
         >
           <h2 style={{ margin: 0 }}>Admin – Product Control Panel</h2>
 
-          <button
-            onClick={() => (window.location.href = "/")}
-            style={{
-              background: "#111",
-              color: "white",
-              padding: "6px 14px",
-              border: "none",
-              borderRadius: "20px",
-              fontSize: "14px",
-              cursor: "pointer",
-            }}
+          <button className="header-link" onClick={() => (window.location.href = "/")}
           >
             Go to Shop
           </button>

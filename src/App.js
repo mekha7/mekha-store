@@ -337,16 +337,26 @@ function App() {
     );
   }
 
-  // ============================
-  // STOCK HELPER
-  // ============================
-  function getStockLabel(p) {
-    if ((p.stock || 0) <= 0)
-      return t("outOfStockLabel", "Out of Stock");
-    if (p.stock < 5)
-      return t("onlyXLeft", `Only ${p.stock} left`);
-    return t("inStockLabel", `${p.stock} in stock`);
+// ============================
+// STOCK HELPER (FINAL WORKING)
+// ============================
+function getStockLabel(p) {
+  const qty = Number(p?.stock || 0);
+
+  // Out of stock
+  if (qty <= 0) {
+    return "Out of Stock";
   }
+
+  // Low stock (1–4)
+  if (qty < 5) {
+    return `Only ${qty} left`;
+  }
+
+  // In stock (5+)
+  return `${qty} in stock`;
+}
+
 
   function isLowStock(p) {
     return p.stock > 0 && p.stock < 5;
@@ -492,7 +502,7 @@ if (view === "services") {
           </button>
 
           <button
-            className="cart-btn"
+            className="header-link"
             onClick={() => setView("checkout")}
           >
             {t("cart", "Cart")} ({cart.length}) — ₹{cartTotal}
@@ -505,9 +515,10 @@ if (view === "services") {
       </header>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="services-page" style={{ paddingTop: "120px", paddingBottom: "200px" }}>
-        <Services t={t} />
-      </main>
+     <main className="services-page">
+  <Services t={t} />
+</main>
+
 
       {/* ================= FOOTER (EXACT SAME AS HOME) ================= */}
       <footer className="footer footer-static">
@@ -728,11 +739,12 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
           </button>
 
           <button
-            className="cart-btn"
-            onClick={() => setView("checkout")}
-          >
-            {t("cart", "Cart")} ({cart.length}) — ₹{cartTotal}
-          </button>
+  className="header-link"
+  onClick={() => setView("checkout")}
+>
+  {t("cart", "Cart")} ({cart.length}) — ₹{cartTotal}
+</button>
+
 
           <div className="lang-wrapper">
             <LanguagePicker language={language} setLanguage={setLanguage} />
@@ -851,7 +863,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
 
                         <div className="hero-cta-row">
                           <button
-                            className="btn-primary hero-btn"
+                            className="header-link"
                             onClick={() => {
                               addToCart(p);
                               setView("checkout");
