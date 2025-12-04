@@ -1,0 +1,157 @@
+/* ============================================================
+   ADMIN PORTAL — MOBILE RESPONSIVE FIXES (ONLY ADMIN)
+   Does NOT affect user UI.
+============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ------------------------------
+     ADMIN PAGE WRAPPER
+  ------------------------------ */
+  .admin {
+    margin: 90px auto 40px !important;
+    padding: 12px !important;
+  }
+
+  /* ------------------------------
+     HEADER BUTTONS (Go to Shop, Logout)
+  ------------------------------ */
+  .admin-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .admin-top-row .header-link {
+    width: 100% !important;
+    text-align: center;
+    padding: 10px !important;
+    background: var(--primary);
+    color: white !important;
+    border-radius: 8px;
+    font-size: 14px !important;
+  }
+
+  /* ------------------------------
+     DASHBOARD CARDS
+  ------------------------------ */
+  .dashboard-cards {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .dash-card {
+    width: 100% !important;
+  }
+
+  /* ------------------------------
+     ADMIN FORM (Add Product, Add Service, Add Column)
+  ------------------------------ */
+  .admin-form form {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .admin-form {
+    padding: 14px !important;
+  }
+
+  /* ------------------------------
+     PRODUCT TABLE (Current Products)
+  ------------------------------ */
+  .admin-list {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 20px !important;
+  }
+
+  .admin-table {
+    min-width: 900px !important; /* Prevent squishing */
+    font-size: 11px !important;
+    border: 1px solid #e5e7eb;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 6px !important;
+    white-space: nowrap;
+  }
+
+  .admin-table-image {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  .btn-small,
+  .btn-danger,
+  .btn-outline,
+  .btn-primary {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+  }
+
+  td:nth-child(7),
+  td:nth-child(8) {
+    text-align: center !important;
+    min-width: 60px !important;
+  }
+
+  td:last-child {
+    min-width: 100px !important;
+    text-align: right !important;
+  }
+
+  /* ------------------------------
+     EDIT MODAL
+  ------------------------------ */
+  .modal {
+    width: 92% !important;
+    padding: 16px !important;
+  }
+
+  .modal-actions {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  /* ------------------------------
+     SERVICES MANAGER TABLE (Admin)
+  ------------------------------ */
+  .services-card {
+    padding: 12px !important;
+  }
+
+  table.admin-table.services-table {
+    min-width: 800px !important; /* Prevent tight columns */
+  }
+
+  table.admin-table.services-table th,
+  table.admin-table.services-table td {
+    padding: 6px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------
+     PUBLIC SERVICES PAGE (NOT ADMIN)
+  ------------------------------ */
+  .services-table-wrapper {
+    overflow-x: auto !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+  }
+
+  .services-table {
+    min-width: 600px !important;
+    font-size: 13px !important;
+  }
+
+  .services-table th,
+  .services-table td {
+    padding: 6px !important;
+    white-space: normal !important;
+  }
+}

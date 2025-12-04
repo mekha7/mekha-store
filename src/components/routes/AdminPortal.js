@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase";
 import "../../App.css";
 import "./AdminPortal.css";
+import "./Adminmobile.css";
 import ServicesManager from "./ServicesManager";
 
 function AdminPortal() {
@@ -496,25 +497,36 @@ function AdminPortal() {
     <main className="admin">
       <div className="admin-top-row">
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-            width: "100%",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Admin – Product Control Panel</h2>
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    width: "100%",
+  }}
+>
+  <h2 style={{ margin: 0 }}>Admin – Product Control Panel</h2>
 
-          <button className="header-link" onClick={() => (window.location.href = "/")}
-          >
-            Go to Shop
-          </button>
-        </div>
+  <div style={{ display: "flex", gap: "10px" }}>
+    <button
+      className="header-link"
+      onClick={() => {
+        const base = window.location.hostname.includes("github.io")
+          ? "/mekha-store/"   // production
+          : "/";              // local
 
-        <button className="header-link" onClick={handleAdminLogout}>
-          Logout
-        </button>
+        window.location.href = base;
+      }}
+    >
+      Go to Shop
+    </button>
+
+    <button className="header-link" onClick={handleAdminLogout}>
+      Logout
+    </button>
+  </div>
+</div>
+
       </div>
 
       {/* Dashboard */}
