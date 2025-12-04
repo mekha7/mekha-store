@@ -8,6 +8,7 @@ export default function ServicesManager() {
   const [newService, setNewService] = useState({ name: "", price: "" });
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnType, setNewColumnType] = useState("text");
+const [editingService, setEditingService] = useState(null);
 
   // Rename column UI
   const [renameColId, setRenameColId] = useState(null);
@@ -523,105 +524,143 @@ export default function ServicesManager() {
           </div>
         </div>
       )}
+{/* --------------------------------------------- */}
+{/* TABLE */}
+{/* --------------------------------------------- */}
+<div className="services-table-wrapper">
+  <table className="admin-table services-table" style={{ marginTop: 25 }}>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Price</th>
 
-      {/* --------------------------------------------- */}
-      {/* TABLE */}
-      {/* --------------------------------------------- */}
-      <table className="admin-table" style={{ marginTop: 25 }}>
-        <thead>
-          <tr>
-            <th>Service</th>
-            <th>Price</th>
+        {orderedColumns
+          .filter((c) => c.visible !== false)
+          .map((c) => (
+            <th key={c.id} style={{ whiteSpace: "nowrap" }}>
+              {renameColId === c.id ? (
+                <div style={{ display: "flex", gap: 5 }}>
+                  <input
+                    className="input-text"
+                    style={{ width: 100 }}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                  />
+                  <button
+                    className="btn-primary"
+                    onClick={() => renameColumn(c, renameValue)}
+                    style={{ padding: "2px 8px" }}
+                  >
+                    ✔
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {c.column_name}
 
-            {orderedColumns
-              .filter((c) => c.visible !== false)
-              .map((c) => (
-                <th key={c.id} style={{ whiteSpace: "nowrap" }}>
-                  {renameColId === c.id ? (
-                    <div style={{ display: "flex", gap: 5 }}>
-                      <input
-                        className="input-text"
-                        style={{ width: 100 }}
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                      />
-                      <button
-                        className="btn-primary"
-                        onClick={() => renameColumn(c, renameValue)}
-                        style={{ padding: "2px 8px" }}
-                      >
-                        ✔
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {c.column_name}
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      cursor: "pointer",
+                      color: "#ff8c00",
+                    }}
+                    onClick={() => {
+                      setRenameColId(c.id);
+                      setRenameValue(c.column_name);
+                    }}
+                  >
+                    ✏️
+                  </span>
 
-                      {/* rename */}
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          cursor: "pointer",
-                          color: "#ff8c00",
-                        }}
-                        onClick={() => {
-                          setRenameColId(c.id);
-                          setRenameValue(c.column_name);
-                        }}
-                      >
-                        ✏️
-                      </span>
-
-                      {/* delete */}
-                      <span
-                        style={{
-                          marginLeft: 6,
-                          cursor: "pointer",
-                          color: "red",
-                        }}
-                        onClick={() => deleteColumn(c)}
-                      >
-                        🗑
-                      </span>
-                    </>
-                  )}
-                </th>
-              ))}
-
-            <th>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {services.map((s) => (
-            <tr key={s.id}>
-              <td>{s.name}</td>
-              <td>₹{s.price}</td>
-
-              {orderedColumns
-                .filter((c) => c.visible !== false)
-                .map((col) => (
-                  <td key={col.id}>{renderFieldInput(s, col)}</td>
-                ))}
-
-              <td>
-                <button
-                  className="btn-danger"
-                  onClick={() => deleteService(s.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      cursor: "pointer",
+                      color: "red",
+                    }}
+                    onClick={() => deleteColumn(c)}
+                  >
+                    🗑
+                  </span>
+                </>
+              )}
+            </th>
           ))}
 
-          {services.length === 0 && (
-            <tr>
-              <td colSpan={orderedColumns.length + 2}>No services yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {services.map((s) => (
+        <tr key={s.id}>
+         <td>
+  {editingService?.id === s.id ? (
+    <input
+      className="input-text"
+      value={editingService.name}
+      onChange={(e) =>
+        setEditingService({ ...editingService, name: e.target.value })
+      }
+    />
+  ) : (
+    s.name
+  )}
+</td>
+
+<td>
+  {editingService?.id === s.id ? (
+    <input
+      className="input-text"
+      type="number"
+      value={editingService.price}
+      onChange={(e) =>
+        setEditingService({ ...editingService, price: e.target.value })
+      }
+    />
+  ) : (
+    `₹${s.price}`
+  )}
+</td>
+
+
+          {orderedColumns
+            .filter((c) => c.visible !== false)
+            .map((col) => (
+              <td key={col.id}>{renderFieldInput(s, col)}</td>
+            ))}
+
+         <td style={{ display: "flex", gap: "6px" }}>
+  <button
+    className="btn-edit"
+    onClick={() => {
+      setRenameColId(null); // avoid column rename mode
+      setEditingService(s); // NEW
+    }}
+  >
+    Edit
+  </button>
+
+  <button
+    className="btn-danger"
+    onClick={() => deleteService(s.id)}
+  >
+    Delete
+  </button>
+</td>
+
+        </tr>
+      ))}
+
+      {services.length === 0 && (
+        <tr>
+          <td colSpan={orderedColumns.length + 2}>No services yet.</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
     </section>
   );
 }
