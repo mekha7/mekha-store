@@ -13,6 +13,7 @@ function AdminPortal() {
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminError, setAdminError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
   // --------------------
@@ -63,8 +64,10 @@ function AdminPortal() {
   // ===========================================================
   async function handleAdminLogin(e) {
     e.preventDefault();
+    if (loginBusy) return;
     setAdminError("");
-
+    setLoginBusy(true);
+    try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: adminUser,
       password: adminPass,
@@ -95,6 +98,8 @@ function AdminPortal() {
 
     setIsAdminLoggedIn(true);
     setAdminPass("");
+    } catch (_) { setAdminError("Unable to connect. Check your connection and try again."); }
+    finally { setLoginBusy(false); }
   }
 
   // LOGOUT
@@ -468,6 +473,7 @@ function AdminPortal() {
             <input
               className="input-text"
               placeholder="Admin Email"
+              type="email" aria-label="Admin email" autoComplete="username" required
               value={adminUser}
               onChange={(e) => setAdminUser(e.target.value)}
             />
@@ -475,14 +481,15 @@ function AdminPortal() {
               className="input-text"
               type="password"
               placeholder="Password"
+              aria-label="Admin password" autoComplete="current-password" required
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
             />
 
             {adminError && <p className="admin-error">{adminError}</p>}
 
-            <button className="btn-primary" type="submit">
-              Login
+            <button className="btn-primary" type="submit" disabled={loginBusy}>
+              {loginBusy ? "Signing in…" : "Login"}
             </button>
           </form>
         </section>
