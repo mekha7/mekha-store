@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import "./App.css";
 import "./mobile.css";
+import "./storeRefresh.css";
 import { normalizeProducts, clampQuantity } from "./storeSafety";
 import LanguagePicker, { translations } from "./LanguagePicker";
 import { supabase } from "./supabase";
@@ -59,6 +60,7 @@ function App() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [products, setProducts] = useState([]);
   const [productStatus, setProductStatus] = useState("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
 
@@ -177,6 +179,7 @@ function App() {
   // ======================================
   useEffect(() => {
     let active = true;
+    setProductStatus("loading");
     async function loadProducts() {
       if (!supabase) { setProductStatus("unavailable"); return; }
       try {
@@ -187,7 +190,7 @@ function App() {
     }
     loadProducts();
     return () => { active = false; };
-  }, []);
+  }, [loadAttempt]);
 
   // ==================================================
   // HOMEPAGE SAVED SETTINGS (LOCALSTORAGE)
@@ -285,7 +288,6 @@ function App() {
     setCategory("All");
     setSearch("");
     setView("shop");
-    window.location.hash = "";
     window.scrollTo(0, 0);
   }
   // ============================
@@ -439,7 +441,7 @@ function getStockLabel(p) {
 if (view === "services") {
   return (
     <div
-      className={`app ${themeEnabled ? "festival-theme" : ""}`}
+      className={`app refreshed-store ${themeEnabled ? "festival-theme" : ""}`}
       style={{
         backgroundImage:
           themeEnabled && themeImageUrl ? `url(${themeImageUrl})` : "none",
@@ -673,7 +675,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
   // ============================
   return (
     <div
-      className={`app ${themeEnabled ? "festival-theme" : ""}`}
+      className={`app refreshed-store ${themeEnabled ? "festival-theme" : ""}`}
       style={{
         backgroundImage:
           themeEnabled && themeImageUrl ? `url(${themeImageUrl})` : "none",
@@ -734,15 +736,16 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
       {/* ============ SHOP VIEW ============ */}
       {view === "shop" && (
         <main className="content">
-          <a href="#top" className="header-link">← Services home</a>
+          <section className="store-intro"><div><p className="store-eyebrow">CCTV & IT SOLUTIONS · DAVANGERE</p><h2>Secure your space.<br/>Simplify your technology.</h2><p>Explore cameras, networking and IT equipment. Get local help with installation, upgrades and maintenance.</p><a className="btn-primary" href="https://wa.me/918050426215" target="_blank" rel="noreferrer">Talk to our team ↗</a></div><aside><span className="intro-symbol" aria-hidden="true">◎</span><h3>From equipment to installation.</h3><p>CCTV systems · Wi-Fi & networking<br/>Computers · Setup & support</p><a href="tel:+918050426215">+91 80504 26215 ↗</a></aside></section>
           {productStatus === "loading" && <p role="status">Loading products…</p>}
-          {productStatus === "unavailable" && <p role="status">The live catalogue is temporarily unavailable. <a href="https://wa.me/918050426215">Ask our team for products and pricing on WhatsApp.</a></p>}
+          {productStatus === "unavailable" && <p role="status">The live catalogue is temporarily unavailable. <a href="https://wa.me/918050426215">Ask our team for products and pricing on WhatsApp.</a> <button onClick={() => setLoadAttempt(n => n + 1)}>Try again</button></p>}
           {productStatus === "ready" && filteredProducts.length === 0 && <p role="status">No products match your search. Try another category or contact our team.</p>}
           {/* ===== STICKY SEARCH BAR (ABOVE BANNER) ===== */}
           <div className="search-row">
             <input
               type="text"
               className="search-box"
+              aria-label="Search products"
               placeholder={t(
                 "searchPlaceholder",
                 "Search products…"
@@ -753,6 +756,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
 
             <select
               className="category-select"
+              aria-label="Product category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -953,12 +957,15 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
             </section>
           )}
 
+          <h2 className="catalogue-title">{category === "All" ? "Explore our products" : category}</h2>
           {/* ===== PRODUCT GRID ===== */}
           <div className="product-grid">
             {homepageProducts.map((p) => (
               <div
                 key={p.id}
                 className="product-card product-card-hover"
+                role="button" tabIndex={0} aria-label={`View ${p.name}`}
+                onKeyDown={e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openProductModal(p); } }}
                 onClick={() => openProductModal(p)}
               >
                 <div className="product-image-wrapper">
@@ -966,7 +973,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
                     <img
                       src={p.images[0]}
                       alt={p.name}
-                      className="product-image"
+                      className="product-image" loading="lazy"
                     />
                   ) : (
                     <div className="product-image-placeholder">
@@ -1561,6 +1568,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
         </div>
       </footer>
 
+      <a className="admin-entry" href="#/admin-9980">Admin login</a>
       {/* ================== CHAT WIDGET ================== */}
       <ChatWidget />
     </div>

@@ -1,11 +1,9 @@
-# Website update
+# Existing storefront refresh
 
-The services homepage is the default entry point. Product store is at `#/shop`; the existing admin route remains `#/admin-9980`.
+This change updates the existing React storefront in place. Root URL opens the product catalogue, using the existing Supabase products table. The existing admin login remains at `#/admin-9980`, including its Supabase authentication, admin profile role check, product editing and storage upload flows. A footer link makes the admin login discoverable.
 
-The homepage uses no remote fonts, images or database requests. Its enquiry form opens a WhatsApp draft; the visitor must send that draft in WhatsApp. It does not claim to save or submit an enquiry.
+Keep the existing hosting provider, domain, REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY. No database migration or new hosting configuration is needed. Build with `npm ci` then `npm run build` and publish the `build` directory through the current deployment process. Preserve the existing custom-domain CNAME when publishing to GitHub Pages.
 
-The store retains the existing Supabase integration. Configure REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY at build time. The anonymous key is a browser credential; database access must be enforced by Supabase row-level security. No database policies were changed or verified in this update. The existing invoice flow remains a client-generated document; it does not confirm payment or reserve database inventory.
+The redesign adds a clean responsive storefront theme, a concise services introduction, accessible product search/category names, keyboard product access and catalogue error/retry states. Safety fixes normalize malformed product data and bound quantities by displayed stock. Invoices retain the existing client-generated behavior; they do not confirm payment or reserve inventory in the database.
 
-Validation: npm ci, CI=true npm test -- --watchAll=false --runInBand (four tests), npm run build. Browser layout QA was unavailable because the managed preview relay was not running. Test mobile/desktop layout, real catalogue access and admin permissions before replacing the public domain.
-
-Deploy the `build` directory to the existing static host. The GitHub branch and PR preserve the existing main branch and domain. The separately published review Site is private and does not change mekshacctv.in.
+Admin login handles connection failures and prevents duplicate submits. Database roles, policies, credentials and product upload logic remain unchanged. Real login/upload and database authorization require verification with the store owner's account. The managed browser preview was unavailable in this workspace.
