@@ -1,0 +1,5 @@
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import ServiceHome from './ServiceHome';
+test('mobile menu and store navigation work',()=>{const onShop=jest.fn();render(<ServiceHome onShop={onShop}/>);const menu=screen.getByRole('button',{name:/menu/i});fireEvent.click(menu);expect(menu).toHaveAttribute('aria-expanded','true');fireEvent.click(screen.getByRole('button',{name:/product store/i}));expect(onShop).toHaveBeenCalledTimes(1);});
+test('enquiry encodes user input into a WhatsApp draft',()=>{render(<ServiceHome onShop={()=>{}}/>);fireEvent.change(screen.getByLabelText('Your name'),{target:{value:'A & B'}});fireEvent.change(screen.getByLabelText('A little about your requirements'),{target:{value:'4 cameras #home'}});const link=screen.getByRole('link',{name:/open WhatsApp directly/i});const text=new URL(link.href).searchParams.get('text');expect(text).toContain('A & B');expect(text).toContain('4 cameras #home');expect(link.href).toMatch(/^https:\/\/wa.me\/918050426215/);});

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import "./App.css";
 import "./mobile.css";
+import { normalizeProducts, clampQuantity } from "./storeSafety";
 import LanguagePicker, { translations } from "./LanguagePicker";
 import { supabase } from "./supabase";
 
@@ -57,6 +58,7 @@ function App() {
 
   const [invoiceData, setInvoiceData] = useState(null);
   const [products, setProducts] = useState([]);
+  const [productStatus, setProductStatus] = useState("loading");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
 
@@ -89,6 +91,7 @@ function App() {
       img.src = themeImageUrl;
 
       img.onload = function () {
+        try {
         const canvas = document.createElement("canvas");
         canvas.width = this.width;
         canvas.height = this.height;
@@ -115,6 +118,7 @@ function App() {
             "rgba(255,215,0,0.28)"
           );
         }
+        } catch (_) { /* Keep the default overlay if image pixels are unavailable. */ }
       };
     }
 
@@ -126,6 +130,8 @@ function App() {
   // ======================================
   useEffect(() => {
     async function loadTheme() {
+      if (!supabase) return;
+      try {
       const { data } = await supabase
         .from("site_theme")
         .select("*")
@@ -137,9 +143,10 @@ function App() {
         setBannerMessage(data[0].banner_message || "");
         setThemeEnabled(!!data[0].is_enabled);
       }
+      } catch (_) { /* Default theme remains usable. */ }
     }
 
-    loadTheme();
+    loadTheme().catch(() => {});
   }, []);
 
   // ======================================
@@ -169,32 +176,17 @@ function App() {
   // LOAD PRODUCTS
   // ======================================
   useEffect(() => {
+    let active = true;
     async function loadProducts() {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Product load error:", error);
-        return;
-      }
-
-      const safe = (data || []).map((p) => ({
-        ...p,
-        images: Array.isArray(p.images) ? p.images : [],
-        stock:
-          typeof p.stock === "number"
-            ? p.stock
-            : p.stock === null || p.stock === undefined
-            ? 0
-            : Number(p.stock) || 0,
-      }));
-
-      setProducts(safe);
+      if (!supabase) { setProductStatus("unavailable"); return; }
+      try {
+        const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+        if (error) throw error;
+        if (active) { setProducts(normalizeProducts(data)); setProductStatus("ready"); }
+      } catch (_) { if (active) setProductStatus("unavailable"); }
     }
-
     loadProducts();
+    return () => { active = false; };
   }, []);
 
   // ==================================================
@@ -203,11 +195,11 @@ function App() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const saved = window.localStorage.getItem("homeSettings");
-    if (!saved) return;
-
     try {
+      const saved = window.localStorage.getItem("homeSettings");
+      if (!saved) return;
       const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object") return;
       setHomeSettings({
         heroEnabled: parsed.heroEnabled ?? true,
         top10Enabled: parsed.top10Enabled ?? true,
@@ -293,6 +285,7 @@ function App() {
     setCategory("All");
     setSearch("");
     setView("shop");
+    window.location.hash = "";
     window.scrollTo(0, 0);
   }
   // ============================
@@ -300,30 +293,17 @@ function App() {
   // ============================
   function addToCart(product) {
     if (product.stock <= 0) return;
-
-    const exists = cart.find((c) => c.product.id === product.id);
-    if (exists) {
-      setCart(
-        cart.map((c) =>
-          c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c
-        )
-      );
-    } else {
-      setCart([...cart, { product, qty: 1 }]);
-    }
+    setCart(prev => {
+      const exists = prev.find(c => c.product.id === product.id);
+      return exists ? prev.map(c => c.product.id === product.id ? { ...c, qty: clampQuantity(c.qty + 1, product.stock) } : c) : [...prev, { product, qty: 1 }];
+    });
   }
-
   function updateQty(id, qty) {
-    const value = Number(qty);
-    if (value <= 0) {
-      setCart(cart.filter((c) => c.product.id !== id));
-    } else {
-      setCart(
-        cart.map((c) =>
-          c.product.id === id ? { ...c, qty: value } : c
-        )
-      );
-    }
+    setCart(prev => prev.flatMap(c => {
+      if (c.product.id !== id) return [c];
+      const value = clampQuantity(qty, c.product.stock);
+      return value ? [{ ...c, qty: value }] : [];
+    }));
   }
 
   // ============================
@@ -450,7 +430,7 @@ function getStockLabel(p) {
   // ADMIN ROUTE
   // ============================
   if (view === "admin-9980") {
-    return <AdminPortal />;
+    return supabase ? <AdminPortal /> : <main style={{padding:40}}><h1>Admin is unavailable</h1><p>Database configuration is required.</p><a href="/">Return home</a></main>;
   }
 
   // ============================
@@ -473,7 +453,7 @@ if (view === "services") {
           onClick={goHome}
           style={{ cursor: "pointer" }}
         >
-          <img src="public/logo.jpg" alt="logo" className="logo" />
+          <img src={`${process.env.PUBLIC_URL}/logo.jpg`} alt="logo" className="logo" />
 
           <div>
             <h1 className="title">
@@ -706,7 +686,7 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
           onClick={goToShop}
           style={{ cursor: "pointer" }}
         >
-          <img src="public/logo.jpg" alt="logo" className="logo" />
+          <img src={`${process.env.PUBLIC_URL}/logo.jpg`} alt="logo" className="logo" />
 
           <div>
             <h1
@@ -754,6 +734,10 @@ notifyOwner(invoiceNumber, customerName, cartTotal, cart);
       {/* ============ SHOP VIEW ============ */}
       {view === "shop" && (
         <main className="content">
+          <a href="#top" className="header-link">← Services home</a>
+          {productStatus === "loading" && <p role="status">Loading products…</p>}
+          {productStatus === "unavailable" && <p role="status">The live catalogue is temporarily unavailable. <a href="https://wa.me/918050426215">Ask our team for products and pricing on WhatsApp.</a></p>}
+          {productStatus === "ready" && filteredProducts.length === 0 && <p role="status">No products match your search. Try another category or contact our team.</p>}
           {/* ===== STICKY SEARCH BAR (ABOVE BANNER) ===== */}
           <div className="search-row">
             <input

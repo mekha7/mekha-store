@@ -1,4 +1,4 @@
-const OWNER_PHONE = "+918050426215";
+const OWNER_PHONE = "918050426215";
 
 export function notifyOwner(orderId, customerName, total, cart) {
   const message = `
@@ -7,7 +7,7 @@ export function notifyOwner(orderId, customerName, total, cart) {
 *Invoice ID:* ${orderId}
 *Customer:* ${customerName}
 *Total:* ₹${total}
-*Items:* ${cart.map((i) => i.name).join(", ")}
+*Items:* ${cart.map((i) => `${i.product.name} × ${i.qty}`).join(", ")}
 ---------------------------------
 Login to Admin Panel for details.
   `;
@@ -15,7 +15,7 @@ Login to Admin Panel for details.
   // WhatsApp notification
   window.open(
     `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(message)}`,
-    "_blank"
+    "_blank", "noopener,noreferrer"
   );
 }
 
